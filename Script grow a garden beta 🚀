@@ -1,0 +1,398 @@
+-- InovationHub Completo Grow a Garden
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local player = Players.LocalPlayer
+
+-- Remotes (ajuste os nomes conforme seu jogo)
+local PlantRemote = ReplicatedStorage:WaitForChild("PlantRemote")
+local HarvestRemote = ReplicatedStorage:WaitForChild("HarvestRemote")
+local SellRemote = ReplicatedStorage:WaitForChild("SellRemote")
+local PetRemote = ReplicatedStorage:WaitForChild("PetRemote")
+local BuyRemote = ReplicatedStorage:WaitForChild("BuyRemote")
+local BoostRemote = ReplicatedStorage:WaitForChild("BoostRemote")
+local MutationRemote = ReplicatedStorage:WaitForChild("MutationRemote")
+
+-- Cores tema esverdeado
+local corFundo = Color3.fromRGB(18, 85, 32)
+local corBotao = Color3.fromRGB(34, 139, 34)
+local corBotaoAtivo = Color3.fromRGB(50, 205, 50)
+local corTexto = Color3.fromRGB(230, 255, 230)
+
+-- Criar GUI
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "InovationHub"
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 700, 0, 480)
+frame.Position = UDim2.new(0.5, -350, 0.5, -240)
+frame.BackgroundColor3 = corFundo
+frame.BorderSizePixel = 0
+frame.AnchorPoint = Vector2.new(0.5, 0.5)
+frame.Name = "MainFrame"
+
+local titulo = Instance.new("TextLabel", frame)
+titulo.Size = UDim2.new(1, 0, 0, 50)
+titulo.Position = UDim2.new(0, 0, 0, 0)
+titulo.BackgroundColor3 = Color3.fromRGB(10, 50, 10)
+titulo.Text = "InovationHub"
+titulo.Font = Enum.Font.GothamBold
+titulo.TextSize = 28
+titulo.TextColor3 = corTexto
+titulo.TextStrokeColor3 = Color3.new(0,0,0)
+titulo.TextStrokeTransparency = 0.6
+
+local abasFrame = Instance.new("Frame", frame)
+abasFrame.Size = UDim2.new(1, 0, 1, -50)
+abasFrame.Position = UDim2.new(0, 0, 0, 50)
+abasFrame.BackgroundColor3 = Color3.fromRGB(15, 75, 15)
+
+local abasNomes = {"Main", "Farm", "Pet", "Utility", "Item", "ESP & UI", "Shop", "Experimental"}
+local botoesAbas = {}
+local conteudosAbas = {}
+
+local function criarBotaoAba(nome, xPos)
+    local btn = Instance.new("TextButton", abasFrame)
+    btn.Size = UDim2.new(0, 80, 0, 30)
+    btn.Position = UDim2.new(0, xPos, 0, 5)
+    btn.BackgroundColor3 = corBotao
+    btn.Text = nome
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 16
+    btn.TextColor3 = corTexto
+    btn.Name = nome.."Btn"
+    btn.AutoButtonColor = false
+    return btn
+end
+
+local function criarConteudoAba(nome)
+    local frameAba = Instance.new("Frame", abasFrame)
+    frameAba.Size = UDim2.new(1, -20, 1, -40)
+    frameAba.Position = UDim2.new(0, 10, 0, 40)
+    frameAba.BackgroundColor3 = Color3.fromRGB(20, 90, 20)
+    frameAba.Visible = false
+    frameAba.Name = nome.."Content"
+    return frameAba
+end
+
+for i, nome in ipairs(abasNomes) do
+    botoesAbas[i] = criarBotaoAba(nome, 10 + (i-1)*85)
+    conteudosAbas[i] = criarConteudoAba(nome)
+end
+
+local function mostrarAba(nome)
+    for i, nomeAba in ipairs(abasNomes) do
+        if nomeAba == nome then
+            conteudosAbas[i].Visible = true
+            botoesAbas[i].BackgroundColor3 = corBotaoAtivo
+        else
+            conteudosAbas[i].Visible = false
+            botoesAbas[i].BackgroundColor3 = corBotao
+        end
+    end
+end
+
+mostrarAba("Main")
+
+for i, btn in ipairs(botoesAbas) do
+    btn.MouseButton1Click:Connect(function()
+        mostrarAba(abasNomes[i])
+    end)
+end
+
+local function criarBotaoToggle(parent, texto, yPos, onFunc, offFunc)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(0, 220, 0, 40)
+    btn.Position = UDim2.new(0, 20, 0, yPos)
+    btn.BackgroundColor3 = corBotao
+    btn.TextColor3 = corTexto
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 18
+    btn.Text = texto.." [OFF]"
+
+    local ativo = false
+
+    btn.MouseButton1Click:Connect(function()
+        ativo = not ativo
+        if ativo then
+            btn.Text = texto.." [ON]"
+            btn.BackgroundColor3 = corBotaoAtivo
+            if onFunc then onFunc() end
+        else
+            btn.Text = texto.." [OFF]"
+            btn.BackgroundColor3 = corBotao
+            if offFunc then offFunc() end
+        end
+    end)
+
+    return btn
+end
+
+-- Variáveis controle
+local autoFarm = false
+local autoSell = false
+local autoPetLevel = false
+local autoBuySeeds = false
+local autoBoost = false
+local autoPetMutation = false
+local espAtivo = false
+
+-- Funções reais do jogo (ajuste nomes e args conforme o seu jogo)
+local function plantar()
+    local char = player.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    local pos = hrp.Position
+    PlantRemote:FireServer("FruitSeed", pos) -- Ajuste nome da seed
+end
+
+local function colher()
+    HarvestRemote:FireServer()
+end
+
+local function vender()
+    SellRemote:FireServer()
+end
+
+local function petLevelUp()
+    PetRemote:FireServer("LevelUp")
+end
+
+local function comprarSeeds()
+    BuyRemote:FireServer("FruitSeed") -- Ajuste nome seed
+end
+
+local function usarBoost()
+    BoostRemote:FireServer("FastGrowth") -- Ajuste nome boost
+end
+
+local function mutarPet()
+    MutationRemote:FireServer("Mutate") -- Ajuste se necessário
+end
+
+-- Função criar ESP Box
+local espBoxes = {}
+
+local function criarESPBox(adornName, parent, color)
+    local box = Instance.new("BoxHandleAdornment")
+    box.Name = adornName
+    box.Adornee = parent
+    box.AlwaysOnTop = true
+    box.ZIndex = 10
+    box.Size = parent.Size
+    box.Color3 = color
+    box.Transparency = 0.5
+    box.Parent = parent
+    return box
+end
+
+local function limparESP()
+    for _, box in pairs(espBoxes) do
+        if box and box.Parent then
+            box:Destroy()
+        end
+    end
+    espBoxes = {}
+end
+
+local function atualizarESP()
+    limparESP()
+    -- ESP jogadores
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= player and plr.Character and plr.Character:FindFirstChild("Head") then
+            local head = plr.Character.Head
+            local box = criarESPBox("PlayerESP", head, Color3.fromRGB(0, 255, 0))
+            table.insert(espBoxes, box)
+        end
+    end
+    -- ESP pets
+    local petsFolder = Workspace:FindFirstChild("Pets")
+    if petsFolder then
+        for _, pet in pairs(petsFolder:GetChildren()) do
+            if pet:IsA("Model") and pet:FindFirstChild("HumanoidRootPart") then
+                local hrp = pet.HumanoidRootPart
+                local box = criarESPBox("PetESP", hrp, Color3.fromRGB(255, 255, 0))
+                table.insert(espBoxes, box)
+            end
+        end
+    end
+    -- ESP itens
+    local itemsFolder = Workspace:FindFirstChild("Items")
+    if itemsFolder then
+        for _, item in pairs(itemsFolder:GetChildren()) do
+            if item:IsA("BasePart") then
+                local box = criarESPBox("ItemESP", item, Color3.fromRGB(255, 0, 0))
+                table.insert(espBoxes, box)
+            end
+        end
+    end
+end
+
+-- Aba Main
+local mainFrame = conteudosAbas[1]
+
+local btnAutoFarm = criarBotaoToggle(mainFrame, "Auto Farm", 20,
+    function()
+        autoFarm = true
+        coroutine.wrap(function()
+            while autoFarm do
+                plantar()
+                colher()
+                wait(2)
+            end
+        end)()
+    end,
+    function()
+        autoFarm = false
+    end
+)
+
+local btnAutoSell = criarBotaoToggle(mainFrame, "Auto Sell", 80,
+    function()
+        autoSell = true
+        coroutine.wrap(function()
+            while autoSell do
+                vender()
+                wait(3)
+            end
+        end)()
+    end,
+    function()
+        autoSell = false
+    end
+)
+
+local btnAutoPetLevel = criarBotaoToggle(mainFrame, "Auto Pet Level Up", 140,
+    function()
+        autoPetLevel = true
+        coroutine.wrap(function()
+            while autoPetLevel do
+                petLevelUp()
+                wait(5)
+            end
+        end)()
+    end,
+    function()
+        autoPetLevel = false
+    end
+)
+
+-- Aba Farm
+local farmFrame = conteudosAbas[2]
+
+local btnAutoBuySeeds = criarBotaoToggle(farmFrame, "Auto Buy Seeds", 20,
+    function()
+        autoBuySeeds = true
+        coroutine.wrap(function()
+            while autoBuySeeds do
+                comprarSeeds()
+                wait(10)
+            end
+        end)()
+    end,
+    function()
+        autoBuySeeds = false
+    end
+)
+
+-- Aba Utility
+local utilityFrame = conteudosAbas[4]
+
+local btnAutoBoost = criarBotaoToggle(utilityFrame, "Auto Use Boost", 20,
+    function()
+        autoBoost = true
+        coroutine.wrap(function()
+            while autoBoost do
+                usarBoost()
+                wait(60)
+            end
+        end)()
+    end,
+    function()
+        autoBoost = false
+    end
+)
+
+-- Aba Pet
+local petFrame = conteudosAbas[3]
+
+local btnAutoPetMutation = criarBotaoToggle(petFrame, "Auto Pet Mutation", 20,
+    function()
+        autoPetMutation = true
+        coroutine.wrap(function()
+            while autoPetMutation do
+                mutarPet()
+                wait(30)
+            end
+        end)()
+    end,
+    function()
+        autoPetMutation = false
+    end
+)
+
+-- Aba ESP & UI
+local espFrame = conteudosAbas[6]
+
+local btnToggleESP = criarBotaoToggle(espFrame, "Toggle ESP", 20,
+    function()
+        espAtivo = true
+        RunService:BindToRenderStep("ESPUpdate", Enum.RenderPriority.Camera.Value + 1, function()
+            if espAtivo then
+                atualizarESP()
+            else
+                RunService:UnbindFromRenderStep("ESPUpdate")
+                limparESP()
+            end
+        end)
+    end,
+    function()
+        espAtivo = false
+        RunService:UnbindFromRenderStep("ESPUpdate")
+        limparESP()
+    end
+)
+
+-- Aba Shop (Teleport)
+local shopFrame = conteudosAbas[7]
+
+local teleportLocations = {
+    ["Loja"] = Vector3.new(100, 10, 200),       -- Ajuste para coordenadas reais
+    ["Plantação"] = Vector3.new(0, 10, 0),
+    ["Venda"] = Vector3.new(-100, 10, -200),
+}
+
+local yPosTeleport = 20
+for nome, pos in pairs(teleportLocations) do
+    local btnTP = Instance.new("TextButton", shopFrame)
+    btnTP.Size = UDim2.new(0, 200, 0, 40)
+    btnTP.Position = UDim2.new(0, 20, 0, yPosTeleport)
+    btnTP.BackgroundColor3 = corBotao
+    btnTP.TextColor3 = corTexto
+    btnTP.Font = Enum.Font.GothamBold
+    btnTP.TextSize = 18
+    btnTP.Text = "Teleport: "..nome
+    btnTP.MouseButton1Click:Connect(function()
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = CFrame.new(pos)
+        end
+    end)
+    yPosTeleport = yPosTeleport + 50
+end
+
+-- Aba Experimental (vazia para você customizar)
+local expFrame = conteudosAbas[8]
+local lblExp = Instance.new("TextLabel", expFrame)
+lblExp.Size = UDim2.new(1, -40, 0, 100)
+lblExp.Position = UDim2.new(0, 20, 0, 20)
+lblExp.BackgroundTransparency = 1
+lblExp.TextColor3 = corTexto
+lblExp.Font = Enum.Font.GothamBold
+lblExp.TextSize = 20
+lblExp.Text = "Aqui você pode adicionar suas funções experimentais!"
+lblExp.TextWrapped = true
+
+return gui
